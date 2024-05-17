@@ -1,0 +1,11 @@
+.idea
+.DS_Store
+*.py[cod]
+*.tar
+.tox/
+.config
+/static
+__pycache__
+foo.py
+junk.txt
+
