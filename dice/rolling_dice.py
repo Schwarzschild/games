@@ -46,6 +46,16 @@ class Die:
         self.rectangle = canvas.create_rectangle(x, margin, x+size, y,
                                                  fill=fill)
         self.dots = self._create_dots()
+        self.text = canvas.create_text(x + size / 2, size-margin, text="")
+
+        self._n = self.roll()
+
+        # Users can set this to anyting and rolling will clear it.
+        self.state = None
+
+    @property
+    def n(self):
+        return self._n
 
     def _create_dots(self):
         # storage for the dots drawn on the die
@@ -81,6 +91,8 @@ class Die:
         canvas = self.canvas
         for dot in self.dots.values():
             canvas.itemconfig(dot, fill=self.fill)
+        self.clear_legend()
+        self.state = None
 
     def roll(self):
         self._clear()
@@ -90,8 +102,13 @@ class Die:
             canvas.itemconfig(self.dots[xy], fill='white')
         return n
 
+    def set_legend(self, legend):
+        self.canvas.itemconfig(self.text, text=legend)
 
-# Add a method to the Canvas class to create a Die object.
+    def clear_legend(self):
+        self.canvas.itemconfig(self.text, text='')
+
+
 def create_die(canvas, x=5, fill='white'):
     d = Die(canvas, x, fill)
     return d
@@ -131,8 +148,6 @@ def make_dice(tk, fills=['white', 'white'], callbacks=None):
         for die in dice:
             die.roll()
 
-    roll_em()
-
     return canvas, dice, roll_em
 
 
@@ -142,19 +157,21 @@ if __name__ == '__main__':
     tk.title('Rolling Dice')
 
     def red(*args):
-        print('red', args)
+        die = dice[0]
+        print('red', die.n)
+        die.set_legend("HOLD")
 
     def blue(*args):
-        print('blue', args)
+        print('blue', dice[1].n)
 
     def green(*args):
-        print('green', args)
+        print('green', dice[2].n)
 
     def purple(*args):
-        print('purple', args)
+        print('purple', dice[3].n)
 
     def orange(*args):
-        print('orange', args)
+        print('orange', dice[4].n)
 
     callbacks = [red, blue, green, purple, orange]
 
