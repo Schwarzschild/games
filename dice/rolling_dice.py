@@ -15,6 +15,10 @@ size = 40
 margin = 5
 
 
+def dice_callback(*args):
+    print(args)
+
+
 class Die:
     # dot locations for each number in die coordinates
     dot_locations = {1: [(20, 20)],
@@ -38,8 +42,9 @@ class Die:
 
         # Draw a blank 40x40 white rectangle to render one die.
         y = margin + size
-        canvas.create_rectangle(x, margin, x+size, y,
-                                fill=fill)
+
+        self.rectangle = canvas.create_rectangle(x, margin, x+size, y,
+                                                 fill=fill)
         self.dots = self._create_dots()
 
     def _create_dots(self):
@@ -95,7 +100,17 @@ def create_die(canvas, x=5, fill='white'):
 Canvas.create_die = create_die
 
 
-def make_dice(tk, fills=['white', 'white']):
+def make_callback(dice, methods):
+    def callback(*args):
+        x = args[0].x
+        for i, die in enumerate(dice):
+            if (x >= die.x) and (x <= die.x+size):
+                return methods[i](args)
+        return None
+    return callback
+
+
+def make_dice(tk, fills=['white', 'white'], callbacks=None):
     """
     :param tk: Tkinter object
     :param fills:
@@ -104,10 +119,13 @@ def make_dice(tk, fills=['white', 'white']):
     n = len(fills)
     width = n * size + (n + 1) * margin
     canvas = Canvas(tk, width=width, height=size + margin)
-    canvas.pack()
 
     dice = [canvas.create_die(x=margin + i * (size + margin), fill=fills[i])
             for i in range(n)]
+
+    if callbacks:
+        cb = make_callback(dice, callbacks)
+        canvas.bind('<Button-1>', cb)
 
     def roll_em():
         for die in dice:
@@ -115,14 +133,38 @@ def make_dice(tk, fills=['white', 'white']):
 
     roll_em()
 
-    return roll_em
+    return canvas, dice, roll_em
 
 
 if __name__ == '__main__':
+
     tk = Tk()
-    roll_em = make_dice(tk, fills=['red', 'blue'])
+    tk.title('Rolling Dice')
+
+    def red(*args):
+        print('red', args)
+
+    def blue(*args):
+        print('blue', args)
+
+    def green(*args):
+        print('green', args)
+
+    def purple(*args):
+        print('purple', args)
+
+    def orange(*args):
+        print('orange', args)
+
+    callbacks = [red, blue, green, purple, orange]
+
+    dice_canvas, dice, roll_em = make_dice(tk, fills=['red', 'blue', 'green',
+                                                      'purple', 'orange'],
+                                           callbacks=callbacks)
+    dice_canvas.pack()
 
     button = Button(tk, text='Roll', command=roll_em)
-    button.pack()
-
+    button.pack(side='left')
+    button2 = Button(tk, text='Exit', command=tk.destroy)
+    button2.pack(side='left')
     tk.mainloop()
