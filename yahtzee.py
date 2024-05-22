@@ -72,8 +72,13 @@ class FiveDice:
     def __init__(self, tk):
         callbacks = [self.red, self.blue, self.green, self.purple, self.orange]
 
-        dice_canvas, dice, _ = make_dice(tk, fills=fills, callbacks=callbacks)
+        frame = Frame(tk, width=300, height=50)
+        button = Button(frame, text='Roll', command=self.roll_em)
+        button.pack(side='left')
+        dice_canvas, dice, _ = make_dice(frame, fills=fills,
+                                         callbacks=callbacks)
         dice_canvas.pack()
+        frame.pack()
 
         self.dice = dice
 
@@ -133,20 +138,20 @@ class FiveDice:
 class ScoreCard:
     def __init__(self, tk, playing_dice):
         self.playing_dice = playing_dice
-        card = {}
-        card['aces'] = self.row(tk, 'Aces')
-        card['twos'] = self.row(tk, 'Twos')
-        card['threes'] = self.row(tk, 'Threes')
-        card['fours'] = self.row(tk, 'Fours')
-        card['fives'] = self.row(tk, 'Fives')
-        card['sixes'] = self.row(tk, 'Sixes')
-        card['3 of a kind'] = self.row(tk, '3 of a kind')
-        card['4 of a kind'] = self.row(tk, '4 of a kind')
-        card['full house'] = self.row(tk, 'Full House')
-        card['small straight'] = self.row(tk, 'Small Straight')
-        card['large straight'] = self.row(tk, 'Large Straight')
-        card['yahtzee'] = self.row(tk, 'Yahtzee')
-        card['chance'] = self.row(tk, 'Chance')
+        card = {'aces': self.row(tk, 'Aces'),
+                'twos': self.row(tk, 'Twos'),
+                'threes': self.row(tk, 'Threes'),
+                'fours': self.row(tk, 'Fours'),
+                'fives': self.row(tk, 'Fives'),
+                'sixes': self.row(tk, 'Sixes'),
+                '3 of a kind': self.row(tk, '3 of a kind'),
+                '4 of a kind': self.row(tk, '4 of a kind'),
+                'full house': self.row(tk, 'Full House'),
+                'small straight': self.row(tk, 'Small Straight'),
+                'large straight': self.row(tk, 'Large Straight'),
+                'yahtzee': self.row(tk, 'Yahtzee'),
+                'chance': self.row(tk, 'Chance')
+                }
         self.all_dice = card
 
     def reset(self):
@@ -213,7 +218,8 @@ def reset_game():
 
 tk = Tk()
 tk.title('Rolling Dice')
-tk.geometry('500x800')
+tk.geometry('440x800')
+tk.resizable(0, 0)
 msg = Message(tk, text="Let's play Yahtzee", width=500)
 msg.pack()
 
@@ -221,8 +227,7 @@ dice = FiveDice(tk)
 
 score_card = ScoreCard(tk, playing_dice=dice)
 
-button = Button(tk, text='Roll', command=dice.roll_em)
-button.pack(side='left')
+
 button = Button(tk, text='Restart', command=reset_game)
 button.pack(side='left')
 button2 = Button(tk, text='Exit', command=tk.destroy)
@@ -230,5 +235,6 @@ button2.pack(side='left')
 
 
 tk.after(1000, lambda: msg.config(text='Dice rolled - make choices.'))
+
 
 tk.mainloop()
