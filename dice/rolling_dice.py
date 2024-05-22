@@ -50,12 +50,19 @@ class Die:
 
         self._n = self.roll()
 
-        # Users can set this to anyting and rolling will clear it.
-        self.state = None
-
     @property
     def n(self):
         return self._n
+
+    @n.setter
+    def n(self, n):
+        assert(0 <= n <= 6)
+        self._n = n
+        self._clear()
+        if n:
+            canvas = self.canvas
+            for xy in self.dot_locations[n]:
+                canvas.itemconfig(self.dots[xy], fill='white')
 
     def _create_dots(self):
         # storage for the dots drawn on the die
@@ -87,19 +94,33 @@ class Die:
 
         return dot
 
+    def __repr__(self):
+        return f'Die({self.n})'
+
+    def __eq__(self, other):
+        return self.n == other.n
+
+    def __ne__(self, other):
+        return self.n != other.n
+
+    def __add__(self, other):
+        return self.n + other.n
+
+    def __radd__(self, other):
+        return self.n + other
+
+    def __hash__(self):
+        return hash(self.n)
+
     def _clear(self):
         canvas = self.canvas
         for dot in self.dots.values():
             canvas.itemconfig(dot, fill=self.fill)
         self.clear_legend()
-        self.state = None
 
     def roll(self):
-        self._clear()
         n = randint(1, 6)
-        canvas = self.canvas
-        for xy in self.dot_locations[n]:
-            canvas.itemconfig(self.dots[xy], fill='white')
+        self.n = n
         return n
 
     def set_legend(self, legend):
@@ -174,10 +195,9 @@ if __name__ == '__main__':
         print('orange', dice[4].n)
 
     callbacks = [red, blue, green, purple, orange]
+    fills = [c.__name__ for c in callbacks]
 
-    dice_canvas, dice, roll_em = make_dice(tk, fills=['red', 'blue', 'green',
-                                                      'purple', 'orange'],
-                                           callbacks=callbacks)
+    dice_canvas, dice, roll_em = make_dice(tk, fills=fills, callbacks=callbacks)
     dice_canvas.pack()
 
     button = Button(tk, text='Roll', command=roll_em)
