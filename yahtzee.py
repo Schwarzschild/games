@@ -4,6 +4,7 @@ from dice.rolling_dice import make_dice
 
 fills = ['red', 'blue', 'green', 'purple', 'orange']
 
+
 def score_aces(dice):
     return sum([d.n for d in dice if d.n == 1])
 
@@ -86,8 +87,13 @@ class FiveDice:
             die.hold = False
 
         self.n_rolls = 1
+        self.game_over = False
 
     def roll_em(self, all=True):
+        if self.game_over:
+            msg['text'] = 'Game Over - Start a new game'
+            return
+
         if self.n_rolls == 3:
             msg['text'] = 'You have reached the maximum number of rolls'
             return
@@ -134,6 +140,9 @@ class FiveDice:
     def orange(self, *args):
         FiveDice.report(self.dice[4])
 
+    def toggle_game_over(self):
+        self.game_over = not self.game_over
+
 
 class ScoreCard:
     def __init__(self, tk, playing_dice):
@@ -155,6 +164,9 @@ class ScoreCard:
         self.all_dice = card
 
     def reset(self):
+        if self.playing_dice.game_over:
+            self.playing_dice.toggle_game_over()
+
         for row in self.all_dice.values():
             for d in row['dice']:
                 d.n = 0
@@ -167,6 +179,7 @@ class ScoreCard:
                 return False
         total_score = sum([row['score'] for row in self.all_dice.values()])
         msg['text'] = f"Game Over - Total Score: {total_score}"
+        self.playing_dice.toggle_game_over()
         return True
 
     def callback(self, *args):
@@ -185,7 +198,7 @@ class ScoreCard:
             pd.n = d.n
 
         method = f"score_{category}".replace(' ', '_')
-        score = eval(method)(self.playing_dice.dice)
+        score = eval(method)(dice)
         self.all_dice[category]['score'] = score
         self.all_dice[category]['label']['text'] = f"{category}: {score}"
         self.playing_dice.reset()
@@ -214,6 +227,7 @@ class ScoreCard:
 def reset_game():
     dice.reset()
     score_card.reset()
+    msg['text'] = "Dice rolled - make choices."
 
 
 tk = Tk()
