@@ -4,7 +4,7 @@ Implement a simple version of the game Yahtzee using tkinter.
 Marc Schwarzschild 20240515
 
 """
-from tkinter import Tk, Button, Message, Label, Frame
+from tkinter import Tk, Button, Message, Label, Frame, Text
 from dice.rolling_dice import make_dice
 
 fills = ['red', 'blue', 'green', 'purple', 'orange']
@@ -86,6 +86,7 @@ class FiveDice:
                                          initialize=False)
         dice_canvas.pack()
         frame.pack()
+        self._frame = frame
 
         self.dice = dice
 
@@ -95,6 +96,10 @@ class FiveDice:
 
         self.n_rolls = 0
         self.game_over = False
+
+    @property
+    def frame(self):
+        return self._frame
 
     def roll_em(self, all=True):
         if self.game_over:
@@ -153,27 +158,36 @@ class FiveDice:
 
 
 class ScoreCard:
-    def __init__(self, tk, playing_dice):
+    def __init__(self, tk, name='Player', playing_dice=None):
         self.playing_dice = playing_dice
-        card = {'Aces': self.row(tk, 'Aces'),
-                'Twos': self.row(tk, 'Twos'),
-                'Threes': self.row(tk, 'Threes'),
-                'Fours': self.row(tk, 'Fours'),
-                'Fives': self.row(tk, 'Fives'),
-                'Sixes': self.row(tk, 'Sixes'),
-                '3 of a Kind': self.row(tk, '3 of a Kind'),
-                '4 of a Kind': self.row(tk, '4 of a Kind'),
-                'Full House': self.row(tk, 'Full House'),
-                'Small Straight': self.row(tk, 'Small Straight'),
-                'Large Straight': self.row(tk, 'Large Straight'),
-                'Yahtzee': self.row(tk, 'Yahtzee'),
-                'Chance': self.row(tk, 'Chance')
+        frame = Frame(tk, width=300, height=650)
+        title = Label(frame, text=name, width=20)
+        title.pack(expand=True, fill='x')
+        card = {'Aces': self.row(frame, 'Aces'),
+                'Twos': self.row(frame, 'Twos'),
+                'Threes': self.row(frame, 'Threes'),
+                'Fours': self.row(frame, 'Fours'),
+                'Fives': self.row(frame, 'Fives'),
+                'Sixes': self.row(frame, 'Sixes'),
+                '3 of a Kind': self.row(frame, '3 of a Kind'),
+                '4 of a Kind': self.row(frame, '4 of a Kind'),
+                'Full House': self.row(frame, 'Full House'),
+                'Small Straight': self.row(frame, 'Small Straight'),
+                'Large Straight': self.row(frame, 'Large Straight'),
+                'Yahtzee': self.row(frame, 'Yahtzee'),
+                'Chance': self.row(frame, 'Chance')
                 }
         self.all_dice = card
+        self._frame = frame
+
+    @property
+    def frame(self):
+        return self._frame
 
     def reset(self):
-        if self.playing_dice.game_over:
-            self.playing_dice.toggle_game_over()
+        playing_dice = self.playing_dice
+        if playing_dice and playing_dice.game_over:
+            playing_dice.toggle_game_over()
 
         for row in self.all_dice.values():
             for d in row['dice']:
@@ -187,10 +201,14 @@ class ScoreCard:
                 return False
         total_score = sum([row['score'] for row in self.all_dice.values()])
         msg['text'] = f"Game Over - Total Score: {total_score}"
-        self.playing_dice.toggle_game_over()
+        if self.playing_dice:
+            self.playing_dice.toggle_game_over()
         return True
 
     def callback(self, *args):
+        if not self.playing_dice:
+            return
+
         if self.is_game_over():
             return
 
@@ -209,7 +227,8 @@ class ScoreCard:
         score = eval(method.lower())(dice)
         self.all_dice[category]['score'] = score
         self.all_dice[category]['label']['text'] = f"{category}: {score}"
-        self.playing_dice.reset()
+        if self.playing_dice:
+            self.playing_dice.reset()
 
         self.is_game_over()
 
@@ -240,14 +259,24 @@ def reset_game():
 
 tk = Tk()
 tk.title('Rolling Dice')
-tk.geometry('440x800')
+tk.geometry('1000x800')
 tk.resizable(0, 0)
 msg = Message(tk, text="Let's play Yahtzee", width=500)
 msg.pack()
 
 dice = FiveDice(tk)
+dice.frame.pack(side='top')
 
-score_card = ScoreCard(tk, playing_dice=dice)
+frame = Frame(tk)#, width=900, height=790)
+
+card_frame = Frame(frame)# , width=900, height=700)
+score_card = ScoreCard(card_frame, name='Player', playing_dice=dice)
+score_card.frame.pack(side='left')
+score_card_2 = ScoreCard(card_frame, name='Computer')
+score_card_2.frame.pack()
+card_frame.pack()
+
+frame.pack()
 
 
 button = Button(tk, text='Restart', command=reset_game)
