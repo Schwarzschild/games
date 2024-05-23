@@ -106,11 +106,29 @@ class Die:
     def __ne__(self, other):
         return self.n != other.n
 
+    def __lt__(self, other):
+        return self.n < other.n
+
+    def __le__(self, other):
+        return self.n <= other.n
+
+    def __gt__(self, other):
+        return self.n > other.n
+
+    def __ge__(self, other):
+        return self.n >= other.n
+
     def __add__(self, other):
         return self.n + other.n
 
     def __radd__(self, other):
         return self.n + other
+
+    def __sub__(self, other):
+        return self.n - other.n
+
+    def __rsub__(self, other):
+        return other - self.n
 
     def __hash__(self):
         return hash(self.n)

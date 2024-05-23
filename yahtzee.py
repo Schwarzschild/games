@@ -69,14 +69,36 @@ def score_full_house(dice):
 
 
 def score_small_straight(dice):
-    if len(set(dice)) >= 4:
+    # 1, 2, 3, 3, 4, 5, 5
+    s = set(dice)
+    n = len(s)
+    possibilities = [[1, 2, 3, 4], [2, 3, 4, 5], [3, 4, 5, 6]]
+    if n < 4:
+        return 0
+    elif n == 6:
         return 30
+    elif n == 4:
+        s = sorted([d.n for d in s])
+        if s in possibilities:
+            return 30
+    elif n == 5:
+        s = sorted([d.n for d in s])
+        if s[0:4] in possibilities or s[1:5] in possibilities:
+            return 30
+
     return 0
 
 
 def score_large_straight(dice):
-    if len(set(dice)) == 5:
+    s = set(dice)
+    if len(s) != 5:
+        return 0
+
+    s = sorted([d.n for d in s])
+    possibilities = [[1, 2, 3, 4, 5], [2, 3, 4, 5, 6]]
+    if s in possibilities:
         return 40
+
     return 0
 
 
