@@ -59,7 +59,7 @@ class Die:
 
     @n.setter
     def n(self, n):
-        assert(0 <= n <= 6)
+        assert 0 <= n <= 6
         self._n = n
         self.clear()
         if n:
@@ -202,7 +202,8 @@ if __name__ == '__main__':
     callbacks = [red, blue, green, purple, orange]
     fills = [c.__name__ for c in callbacks]
 
-    dice_canvas, dice, roll_em = make_dice(tk, fills=fills, callbacks=callbacks)
+    dice_canvas, dice, roll_em = (
+        make_dice(tk, fills=fills, callbacks=callbacks))
     dice_canvas.pack()
 
     button = Button(tk, text='Roll', command=roll_em)

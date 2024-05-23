@@ -8,6 +8,22 @@ from tkinter import Tk, Button, Message, Label, Frame, Text
 from dice.rolling_dice import make_dice
 
 fills = ['red', 'blue', 'green', 'purple', 'orange']
+categories = ['Aces', 'Twos', 'Threes', 'Fours', 'Fives', 'Sixes',
+              '3 of a Kind', '4 of a Kind', 'Full House',
+              'Small Straight', 'Large Straight', 'Yahtzee', 'Chance']
+
+
+def set_msg():
+    s = "Y"
+    if score_card.is_game_over():
+        s = "Game Over - y"
+    elif dice.n_rolls == 3:
+        s = "Already had 3 rolls - y"
+    s = f"{s}our score: {score_card.score} " \
+        f"vs Computer score: {score_card_2.score}."
+    if not s.startswith('Game Over'):
+        s += f"  Rolls left: {3 - dice.n_rolls}"
+    msg['text'] = s
 
 
 def score_aces(dice):
@@ -94,20 +110,20 @@ class FiveDice:
             die.clear()
             die.hold = False
 
-        self.n_rolls = 0
+        self._n_rolls = 0
         self.game_over = False
 
     @property
     def frame(self):
         return self._frame
 
-    def roll_em(self, all=True):
-        if self.game_over:
-            msg['text'] = 'Game Over - Start a new game'
-            return
+    @property
+    def n_rolls(self):
+        return self._n_rolls
 
-        if self.n_rolls == 3:
-            msg['text'] = 'You have reached the maximum number of rolls'
+    def roll_em(self, all=True):
+        if self.game_over or self._n_rolls == 3:
+            set_msg()
             return
 
         for die in self.dice:
@@ -115,16 +131,15 @@ class FiveDice:
                 die.roll()
                 die.hold = False
 
-        if self.n_rolls == 2:
-            msg['text'] = "That's three rolls - choose a category."
+        self._n_rolls += 1
 
-        self.n_rolls += 1
+        set_msg()
 
     def reset(self):
         for die in self.dice:
             die.n = 0
             die.hold = False
-        self.n_rolls = 0
+        self._n_rolls = 0
         msg['text'] = "Roll the dice."
 
     @staticmethod
@@ -158,25 +173,13 @@ class FiveDice:
 
 
 class ScoreCard:
-    def __init__(self, tk, name='Player', playing_dice=None):
+    def __init__(self, tk, playing_dice, name='Player', auto_play=False):
         self.playing_dice = playing_dice
+        self.auto_play = auto_play
         frame = Frame(tk, width=300, height=650)
         title = Label(frame, text=name, width=20)
         title.pack(expand=True, fill='x')
-        card = {'Aces': self.row(frame, 'Aces'),
-                'Twos': self.row(frame, 'Twos'),
-                'Threes': self.row(frame, 'Threes'),
-                'Fours': self.row(frame, 'Fours'),
-                'Fives': self.row(frame, 'Fives'),
-                'Sixes': self.row(frame, 'Sixes'),
-                '3 of a Kind': self.row(frame, '3 of a Kind'),
-                '4 of a Kind': self.row(frame, '4 of a Kind'),
-                'Full House': self.row(frame, 'Full House'),
-                'Small Straight': self.row(frame, 'Small Straight'),
-                'Large Straight': self.row(frame, 'Large Straight'),
-                'Yahtzee': self.row(frame, 'Yahtzee'),
-                'Chance': self.row(frame, 'Chance')
-                }
+        card = {category: self.row(frame, category) for category in categories}
         self.all_dice = card
         self._frame = frame
 
@@ -195,42 +198,52 @@ class ScoreCard:
             row['score'] = 0
             row['label']['text'] = f"{row['label']['text'].split(':')[0]}: 0"
 
+    @property
+    def score(self):
+        return sum([row['score'] for row in self.all_dice.values()])
+
     def is_game_over(self):
         for row in self.all_dice.values():
             if sum(row['dice']) == 0:
                 return False
-        total_score = sum([row['score'] for row in self.all_dice.values()])
-        msg['text'] = f"Game Over - Total Score: {total_score}"
+
         if self.playing_dice:
             self.playing_dice.toggle_game_over()
         return True
 
     def callback(self, *args):
-        if not self.playing_dice:
-            return
+        playing_dice = self.playing_dice
+
+        if sum(playing_dice.dice) == 0:
+            return False
 
         if self.is_game_over():
-            return
+            return False
 
         category = args[0]
         dice = self.all_dice[category]['dice']
 
         if sum(dice):
             msg['text'] = f"You have already scored {category}"
-            return
+            return False
 
-        for d, pd in zip(self.playing_dice.dice,
-                         [d for d in dice]):
-            pd.n = d.n
+        for pd, d in zip(playing_dice.dice, [d for d in dice]):
+            d.n = pd.n
 
         method = f"score_{category}".replace(' ', '_')
-        score = eval(method.lower())(dice)
-        self.all_dice[category]['score'] = score
-        self.all_dice[category]['label']['text'] = f"{category}: {score}"
-        if self.playing_dice:
-            self.playing_dice.reset()
+        row_score = eval(method.lower())(dice)
+        self.all_dice[category]['score'] = row_score
+        self.all_dice[category]['label']['text'] = f"{category}: {row_score}"
 
-        self.is_game_over()
+        playing_dice.reset()
+
+        if not self.auto_play:
+            play_for_computer()
+            playing_dice.reset()
+
+        set_msg()
+
+        return True
 
     def make_callback(self, category):
         def callback(*args):
@@ -247,14 +260,36 @@ class ScoreCard:
         dice_canvas.pack(side='right')
 
         frame.pack()
-        dice_canvas.bind('<Button-1>', self.make_callback(category))
+        if not self.auto_play:
+            dice_canvas.bind('<Button-1>', self.make_callback(category))
         return {'dice': dice, 'label': label, 'score': 0}
 
 
 def reset_game():
     dice.reset()
     score_card.reset()
+    score_card_2.reset()
     msg['text'] = "Roll the dice."
+
+
+def score_all(dice):
+    methods = [f"score_{c}".replace(' ', '_').lower() for c in categories]
+    methods = [eval(m) for m in methods]
+    scores = [(m(dice.dice), c) for c, m in zip(categories, methods)]
+    scores.sort()
+    scores.reverse()
+    return scores
+
+
+def play_for_computer():
+    dice.roll_em()
+
+    scores = score_all(dice)
+
+    for score, category in scores:
+        if score_card_2.callback(category):
+            print(f"Computer scores {category} {score}")
+            break
 
 
 tk = Tk()
@@ -267,15 +302,13 @@ msg.pack()
 dice = FiveDice(tk)
 dice.frame.pack(side='top')
 
-frame = Frame(tk)#, width=900, height=790)
-
-card_frame = Frame(frame)# , width=900, height=700)
-score_card = ScoreCard(card_frame, name='Player', playing_dice=dice)
+frame = Frame(tk)
+card_frame = Frame(frame)
+score_card = ScoreCard(card_frame, dice, name='Player')
 score_card.frame.pack(side='left')
-score_card_2 = ScoreCard(card_frame, name='Computer')
+score_card_2 = ScoreCard(card_frame, dice, name='Computer', auto_play=True)
 score_card_2.frame.pack()
 card_frame.pack()
-
 frame.pack()
 
 
@@ -283,9 +316,5 @@ button = Button(tk, text='Restart', command=reset_game)
 button.pack(side='left')
 button2 = Button(tk, text='Exit', command=tk.destroy)
 button2.pack(side='left')
-
-
-# tk.after(1000, lambda: msg.config(text='Dice rolled - make choices.'))
-
 
 tk.mainloop()
