@@ -58,7 +58,7 @@ class Die:
     def n(self, n):
         assert(0 <= n <= 6)
         self._n = n
-        self._clear()
+        self.clear()
         if n:
             canvas = self.canvas
             for xy in self.dot_locations[n]:
@@ -112,7 +112,7 @@ class Die:
     def __hash__(self):
         return hash(self.n)
 
-    def _clear(self):
+    def clear(self):
         canvas = self.canvas
         for dot in self.dots.values():
             canvas.itemconfig(dot, fill=self.fill)

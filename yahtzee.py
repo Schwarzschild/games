@@ -84,9 +84,10 @@ class FiveDice:
         self.dice = dice
 
         for die in dice:
+            die.clear()
             die.hold = False
 
-        self.n_rolls = 1
+        self.n_rolls = 0
         self.game_over = False
 
     def roll_em(self, all=True):
@@ -110,11 +111,11 @@ class FiveDice:
 
     def reset(self):
         for die in self.dice:
-            die.clear_legend()
+            die.clear()
             die.hold = False
         self.n_rolls = 0
-        msg['text'] = "Dice rolled - make choices."
-        self.roll_em()
+        msg['text'] = "Roll the dice."
+        # self.roll_em()
 
     @staticmethod
     def report(die):
@@ -227,7 +228,7 @@ class ScoreCard:
 def reset_game():
     dice.reset()
     score_card.reset()
-    msg['text'] = "Dice rolled - make choices."
+    msg['text'] = "Roll the dice."
 
 
 tk = Tk()
@@ -248,7 +249,7 @@ button2 = Button(tk, text='Exit', command=tk.destroy)
 button2.pack(side='left')
 
 
-tk.after(1000, lambda: msg.config(text='Dice rolled - make choices.'))
+# tk.after(1000, lambda: msg.config(text='Dice rolled - make choices.'))
 
 
 tk.mainloop()
