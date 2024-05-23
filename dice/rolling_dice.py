@@ -30,7 +30,7 @@ class Die:
                      6: [(10, 10), (10, 20), (10, 30),
                          (30, 10), (30, 20), (30, 30)]}
 
-    def __init__(self, canvas, x=5, fill='white'):
+    def __init__(self, canvas, x=5, fill='white', initialize=True):
         """
         :param canvas: TK canvas
         :param x: x location of the top left corner of the die
@@ -48,7 +48,10 @@ class Die:
         self.dots = self._create_dots()
         self.text = canvas.create_text(x + size / 2, size-margin, text="")
 
-        self._n = self.roll()
+        if initialize:
+            self._n = self.roll()
+        else:
+            self._n = 0
 
     @property
     def n(self):
@@ -130,8 +133,8 @@ class Die:
         self.canvas.itemconfig(self.text, text='')
 
 
-def create_die(canvas, x=5, fill='white'):
-    d = Die(canvas, x, fill)
+def create_die(canvas, x=5, fill='white', initialize=True):
+    d = Die(canvas, x, fill, initialize=initialize)
     return d
 
 
@@ -148,7 +151,7 @@ def make_callback(dice, methods):
     return callback
 
 
-def make_dice(tk, fills=['white', 'white'], callbacks=None):
+def make_dice(tk, fills=['white', 'white'], callbacks=None, initialize=True):
     """
     :param tk: Tkinter object
     :param fills:
@@ -158,7 +161,9 @@ def make_dice(tk, fills=['white', 'white'], callbacks=None):
     width = n * size + (n + 1) * margin
     canvas = Canvas(tk, width=width, height=size + margin)
 
-    dice = [canvas.create_die(x=margin + i * (size + margin), fill=fills[i])
+    sm = size + margin
+    dice = [canvas.create_die(x=margin + i * sm, initialize=initialize,
+                              fill=fills[i])
             for i in range(n)]
 
     if callbacks:

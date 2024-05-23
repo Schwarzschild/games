@@ -1,4 +1,9 @@
-from time import sleep
+"""
+Implement a simple version of the game Yahtzee using tkinter.
+
+Marc Schwarzschild 20240515
+
+"""
 from tkinter import Tk, Button, Message, Label, Frame
 from dice.rolling_dice import make_dice
 
@@ -60,7 +65,7 @@ def score_large_straight(dice):
 
 
 def score_yahtzee(dice):
-    if len(set(dice)) == 1:
+    if dice[0].n and (len(set(dice)) == 1):
         return 50
     return 0
 
@@ -77,7 +82,8 @@ class FiveDice:
         button = Button(frame, text='Roll', command=self.roll_em)
         button.pack(side='left')
         dice_canvas, dice, _ = make_dice(frame, fills=fills,
-                                         callbacks=callbacks)
+                                         callbacks=callbacks,
+                                         initialize=False)
         dice_canvas.pack()
         frame.pack()
 
@@ -111,14 +117,15 @@ class FiveDice:
 
     def reset(self):
         for die in self.dice:
-            die.clear()
+            die.n = 0
             die.hold = False
         self.n_rolls = 0
         msg['text'] = "Roll the dice."
-        # self.roll_em()
 
     @staticmethod
     def report(die):
+        if die.n == 0:
+            return
         if die.hold:
             die.clear_legend()
             die.hold = False
@@ -148,19 +155,19 @@ class FiveDice:
 class ScoreCard:
     def __init__(self, tk, playing_dice):
         self.playing_dice = playing_dice
-        card = {'aces': self.row(tk, 'Aces'),
-                'twos': self.row(tk, 'Twos'),
-                'threes': self.row(tk, 'Threes'),
-                'fours': self.row(tk, 'Fours'),
-                'fives': self.row(tk, 'Fives'),
-                'sixes': self.row(tk, 'Sixes'),
-                '3 of a kind': self.row(tk, '3 of a kind'),
-                '4 of a kind': self.row(tk, '4 of a kind'),
-                'full house': self.row(tk, 'Full House'),
-                'small straight': self.row(tk, 'Small Straight'),
-                'large straight': self.row(tk, 'Large Straight'),
-                'yahtzee': self.row(tk, 'Yahtzee'),
-                'chance': self.row(tk, 'Chance')
+        card = {'Aces': self.row(tk, 'Aces'),
+                'Twos': self.row(tk, 'Twos'),
+                'Threes': self.row(tk, 'Threes'),
+                'Fours': self.row(tk, 'Fours'),
+                'Fives': self.row(tk, 'Fives'),
+                'Sixes': self.row(tk, 'Sixes'),
+                '3 of a Kind': self.row(tk, '3 of a Kind'),
+                '4 of a Kind': self.row(tk, '4 of a Kind'),
+                'Full House': self.row(tk, 'Full House'),
+                'Small Straight': self.row(tk, 'Small Straight'),
+                'Large Straight': self.row(tk, 'Large Straight'),
+                'Yahtzee': self.row(tk, 'Yahtzee'),
+                'Chance': self.row(tk, 'Chance')
                 }
         self.all_dice = card
 
@@ -187,7 +194,7 @@ class ScoreCard:
         if self.is_game_over():
             return
 
-        category = args[0].lower()
+        category = args[0]
         dice = self.all_dice[category]['dice']
 
         if sum(dice):
@@ -199,7 +206,7 @@ class ScoreCard:
             pd.n = d.n
 
         method = f"score_{category}".replace(' ', '_')
-        score = eval(method)(dice)
+        score = eval(method.lower())(dice)
         self.all_dice[category]['score'] = score
         self.all_dice[category]['label']['text'] = f"{category}: {score}"
         self.playing_dice.reset()
@@ -208,12 +215,12 @@ class ScoreCard:
 
     def make_callback(self, category):
         def callback(*args):
-            self.callback(category.lower())
+            self.callback(category)
         return callback
 
     def row(self, tk, category):
         frame = Frame(tk, width=300, height=50)
-        dice_canvas, dice, _ = make_dice(frame, fills=fills)
+        dice_canvas, dice, _ = make_dice(frame, fills=fills, initialize=False)
         for die in dice:
             die.n = 0
         label = Label(frame, text=f"{category}: 0", width=20)
