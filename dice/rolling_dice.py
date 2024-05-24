@@ -30,7 +30,7 @@ class Die:
                      6: [(10, 10), (10, 20), (10, 30),
                          (30, 10), (30, 20), (30, 30)]}
 
-    def __init__(self, canvas, x=5, fill='white'):
+    def __init__(self, canvas, x=5, fill='white', initialize=True):
         """
         :param canvas: TK canvas
         :param x: x location of the top left corner of the die
@@ -48,14 +48,24 @@ class Die:
         self.dots = self._create_dots()
         self.text = canvas.create_text(x + size / 2, size-margin, text="")
 
-        self._n = self.roll()
-
-        # Users can set this to anyting and rolling will clear it.
-        self.state = None
+        if initialize:
+            self._n = self.roll()
+        else:
+            self._n = 0
 
     @property
     def n(self):
         return self._n
+
+    @n.setter
+    def n(self, n):
+        assert 0 <= n <= 6
+        self._n = n
+        self.clear()
+        if n:
+            canvas = self.canvas
+            for xy in self.dot_locations[n]:
+                canvas.itemconfig(self.dots[xy], fill='white')
 
     def _create_dots(self):
         # storage for the dots drawn on the die
@@ -87,19 +97,51 @@ class Die:
 
         return dot
 
-    def _clear(self):
+    def __repr__(self):
+        return f'Die({self.n})'
+
+    def __eq__(self, other):
+        return self.n == other.n
+
+    def __ne__(self, other):
+        return self.n != other.n
+
+    def __lt__(self, other):
+        return self.n < other.n
+
+    def __le__(self, other):
+        return self.n <= other.n
+
+    def __gt__(self, other):
+        return self.n > other.n
+
+    def __ge__(self, other):
+        return self.n >= other.n
+
+    def __add__(self, other):
+        return self.n + other.n
+
+    def __radd__(self, other):
+        return self.n + other
+
+    def __sub__(self, other):
+        return self.n - other.n
+
+    def __rsub__(self, other):
+        return other - self.n
+
+    def __hash__(self):
+        return hash(self.n)
+
+    def clear(self):
         canvas = self.canvas
         for dot in self.dots.values():
             canvas.itemconfig(dot, fill=self.fill)
         self.clear_legend()
-        self.state = None
 
     def roll(self):
-        self._clear()
         n = randint(1, 6)
-        canvas = self.canvas
-        for xy in self.dot_locations[n]:
-            canvas.itemconfig(self.dots[xy], fill='white')
+        self.n = n
         return n
 
     def set_legend(self, legend):
@@ -109,8 +151,8 @@ class Die:
         self.canvas.itemconfig(self.text, text='')
 
 
-def create_die(canvas, x=5, fill='white'):
-    d = Die(canvas, x, fill)
+def create_die(canvas, x=5, fill='white', initialize=True):
+    d = Die(canvas, x, fill, initialize=initialize)
     return d
 
 
@@ -127,7 +169,7 @@ def make_callback(dice, methods):
     return callback
 
 
-def make_dice(tk, fills=['white', 'white'], callbacks=None):
+def make_dice(tk, fills=['white', 'white'], callbacks=None, initialize=True):
     """
     :param tk: Tkinter object
     :param fills:
@@ -137,7 +179,9 @@ def make_dice(tk, fills=['white', 'white'], callbacks=None):
     width = n * size + (n + 1) * margin
     canvas = Canvas(tk, width=width, height=size + margin)
 
-    dice = [canvas.create_die(x=margin + i * (size + margin), fill=fills[i])
+    sm = size + margin
+    dice = [canvas.create_die(x=margin + i * sm, initialize=initialize,
+                              fill=fills[i])
             for i in range(n)]
 
     if callbacks:
@@ -174,10 +218,10 @@ if __name__ == '__main__':
         print('orange', dice[4].n)
 
     callbacks = [red, blue, green, purple, orange]
+    fills = [c.__name__ for c in callbacks]
 
-    dice_canvas, dice, roll_em = make_dice(tk, fills=['red', 'blue', 'green',
-                                                      'purple', 'orange'],
-                                           callbacks=callbacks)
+    dice_canvas, dice, roll_em = (
+        make_dice(tk, fills=fills, callbacks=callbacks))
     dice_canvas.pack()
 
     button = Button(tk, text='Roll', command=roll_em)
