@@ -69,3 +69,9 @@ my version of the game you can click on a given die to hold it while you
 roll the second or third rolls of each turn.  You can choose where to apply 
 the dice by clicking on the dice on the score card in the relevant row.  Try it.
 
+
+```
+$ pip install https://github.com/Schwarzschild/games.git
+$ python -m games.yahtzee
+```
+
