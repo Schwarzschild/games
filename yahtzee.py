@@ -332,7 +332,7 @@ def roll_em():
 
 
 tk = Tk()
-tk.title('Rolling Dice')
+tk.title('Yahtzee')
 tk.geometry('1000x800')
 tk.resizable(0, 0)
 msg = Message(tk, text="Let's play Yahtzee", width=500)
