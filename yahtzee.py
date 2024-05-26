@@ -4,6 +4,8 @@ Implement a simple version of the game Yahtzee using tkinter.
 Marc Schwarzschild 20240515
 
 """
+
+from datetime import datetime
 from tkinter import Tk, Button, Message, Label, Frame, Text
 from dice.rolling_dice import make_dice
 
@@ -13,10 +15,25 @@ categories = ['Aces', 'Twos', 'Threes', 'Fours', 'Fives', 'Sixes',
               'Small Straight', 'Large Straight', 'Yahtzee', 'Chance']
 
 
+def save_score(player_score, computer_score):
+    time_stamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    with open('yahtzee_scores.txt', 'a') as f:
+        f.write(f"{time_stamp} "
+                f"Player: {player_score} Computer:"
+                f" {computer_score}\n")
+
+
 def set_msg():
     s = "Y"
+
+    # Save state of game_over before calling is_game_over
+    game_over = score_card.game_over
+
     if score_card.is_game_over():
         s = "Game Over - y"
+        if not game_over:
+            # game over state changed
+            save_score(score_card.score, score_card_2.score)
     elif dice.n_rolls == 3:
         s = "Already had 3 rolls - y"
     s = f"{s}our score: {score_card.score} " \
@@ -24,6 +41,11 @@ def set_msg():
     if not s.startswith('Game Over'):
         s += f"  Rolls left: {3 - dice.n_rolls}"
     msg['text'] = s
+
+
+def count_dice(dice, n):
+    s = sum([d.n == n for d in dice])
+    return s
 
 
 def score_aces(dice):
@@ -51,19 +73,22 @@ def score_sixes(dice):
 
 
 def score_3_of_a_kind(dice):
-    if len(set(dice)) <= 3:
-        return sum(dice)
+    for die in set(dice):
+        if count_dice(dice, die.n) >= 3:
+            return sum(dice)
     return 0
 
 
 def score_4_of_a_kind(dice):
-    if len(set(dice)) <= 2:
-        return sum(dice)
+    for die in set(dice):
+        if count_dice(dice, die.n) >= 4:
+            return sum(dice)
     return 0
 
 
 def score_full_house(dice):
-    if len(set(dice)) == 2:
+    s = set(dice)
+    if len(s) == 2 and count_dice(dice, min(s).n) >= 2:
         return 25
     return 0
 
@@ -103,7 +128,7 @@ def score_large_straight(dice):
 
 
 def score_yahtzee(dice):
-    if dice[0].n and (len(set(dice)) == 1):
+    if len(set(dice)) == 1:
         return 50
     return 0
 
@@ -113,18 +138,14 @@ def score_chance(dice):
 
 
 class FiveDice:
-    def __init__(self, tk):
+    def __init__(self, frame):
         callbacks = [self.red, self.blue, self.green, self.purple, self.orange]
 
-        frame = Frame(tk, width=300, height=50)
-        button = Button(frame, text='Roll', command=self.roll_em)
-        button.pack(side='left')
-        dice_canvas, dice, _ = make_dice(frame, fills=fills,
+        dice_canvas, dice, _ = make_dice(frame,
+                                         fills=fills,
                                          callbacks=callbacks,
                                          initialize=False)
         dice_canvas.pack()
-        frame.pack()
-        self._frame = frame
 
         self.dice = dice
 
@@ -133,29 +154,18 @@ class FiveDice:
             die.hold = False
 
         self._n_rolls = 0
-        self.game_over = False
-
-    @property
-    def frame(self):
-        return self._frame
 
     @property
     def n_rolls(self):
         return self._n_rolls
 
-    def roll_em(self, all=True):
-        if self.game_over or self._n_rolls == 3:
-            set_msg()
-            return
-
+    def roll_em(self):
         for die in self.dice:
             if all and not die.hold:
                 die.roll()
                 die.hold = False
 
         self._n_rolls += 1
-
-        set_msg()
 
     def reset(self):
         for die in self.dice:
@@ -164,8 +174,8 @@ class FiveDice:
         self._n_rolls = 0
         msg['text'] = "Roll the dice."
 
-    @staticmethod
-    def report(die):
+    def report(self, i):
+        die = self.dice[i]
         if die.n == 0:
             return
         if die.hold:
@@ -176,22 +186,19 @@ class FiveDice:
             die.hold = True
 
     def red(self, *args):
-        FiveDice.report(self.dice[0])
+        self.report(0)
 
     def blue(self, *args):
-        FiveDice.report(self.dice[1])
+        self.report(1)
 
     def green(self, *args):
-        FiveDice.report(self.dice[2])
+        self.report(2)
 
     def purple(self, *args):
-        FiveDice.report(self.dice[3])
+        self.report(3)
 
     def orange(self, *args):
-        FiveDice.report(self.dice[4])
-
-    def toggle_game_over(self):
-        self.game_over = not self.game_over
+        self.report(4)
 
 
 class ScoreCard:
@@ -204,15 +211,15 @@ class ScoreCard:
         card = {category: self.row(frame, category) for category in categories}
         self.all_dice = card
         self._frame = frame
+        self.game_over = False
 
     @property
     def frame(self):
         return self._frame
 
     def reset(self):
-        playing_dice = self.playing_dice
-        if playing_dice and playing_dice.game_over:
-            playing_dice.toggle_game_over()
+        self.playing_dice.reset()
+        self.game_over = False
 
         for row in self.all_dice.values():
             for d in row['dice']:
@@ -228,9 +235,7 @@ class ScoreCard:
         for row in self.all_dice.values():
             if sum(row['dice']) == 0:
                 return False
-
-        if self.playing_dice:
-            self.playing_dice.toggle_game_over()
+        self.game_over = True
         return True
 
     def callback(self, *args):
@@ -239,7 +244,7 @@ class ScoreCard:
         if sum(playing_dice.dice) == 0:
             return False
 
-        if self.is_game_over():
+        if self.game_over:
             return False
 
         category = args[0]
@@ -306,12 +311,24 @@ def score_all(dice):
 def play_for_computer():
     dice.roll_em()
 
+    # Get scores for each category in descending order by score
     scores = score_all(dice)
 
     for score, category in scores:
         if score_card_2.callback(category):
-            print(f"Computer scores {category} {score}")
+            # Found a category to use
             break
+
+
+def roll_em():
+    game_over = score_card.is_game_over()
+
+    if game_over:
+        print(f"Game Over - Your score: {score_card.score}")
+    elif dice.n_rolls < 3:
+        dice.roll_em()
+
+    set_msg()
 
 
 tk = Tk()
@@ -321,8 +338,11 @@ tk.resizable(0, 0)
 msg = Message(tk, text="Let's play Yahtzee", width=500)
 msg.pack()
 
-dice = FiveDice(tk)
-dice.frame.pack(side='top')
+frame = Frame(tk, width=300, height=50)
+button = Button(frame, text='Roll', command=roll_em)
+button.pack(side='left')
+dice = FiveDice(frame)
+frame.pack()
 
 frame = Frame(tk)
 card_frame = Frame(frame)
