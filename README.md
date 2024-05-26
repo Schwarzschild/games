@@ -62,16 +62,14 @@ Example with five colored dice.  This is in the `five_dice.py` file.
 
 ## Yahtzee
 
-You can play Yahtzee with the `yahtzee.py` script like this: `$ python 
-yahtzee.py` 
+You can play Yahtzee with the `yahtzee.py` script.
+
+```
+$ pip install git+https://github.com/Schwarzschild/games.git
+$ python -m yahtzee
+```
+
 The rules for Yahtzee are [here](https://en.wikipedia.org/wiki/Yahtzee).  In 
 my version of the game you can click on a given die to hold it while you 
 roll the second or third rolls of each turn.  You can choose where to apply 
 the dice by clicking on the dice on the score card in the relevant row.  Try it.
-
-
-```
-$ pip install https://github.com/Schwarzschild/games.git
-$ python -m games.yahtzee
-```
-
